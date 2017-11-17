@@ -1,0 +1,7 @@
+{
+    "name": "newclarity/site-releases",
+    "homepage": "https://github.com/newclarity/site-releases",
+    "description": "WordPress Plugin to help agencies to track site releases",
+    "type": "wordpress-plugin",
+    "license": "GPL-3.0"
+}
