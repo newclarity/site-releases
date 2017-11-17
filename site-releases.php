@@ -13,7 +13,7 @@ add_action( 'init', [ 'Site_Releases', 'on_load' ], 11 );
 
 class Site_Releases {
 
-	const POST_TYPE =  'sr_release';
+	const POST_TYPE =  'sr_site_release';
 	const TAXONOMY =  'sr_release_name';
 	const BELOW_SETTINGS = 80;
 	const CAPABILITIES_REQUIRED = 'update_core';
