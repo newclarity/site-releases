@@ -3,7 +3,7 @@
 Plugin Name: Site Releases
 Plugin URI: https://github.com/newclarity/site-releases
 Description: Help agencies to track site releases
-Version: 0.1.0
+Version: 0.1.2
 Author: The NewClarity Team
 Author URI: http://newclarity.net
 Text Domain: site-releases
@@ -14,9 +14,12 @@ add_action( 'init', [ 'Site_Releases', 'on_load' ], 11 );
 class Site_Releases {
 
 	const POST_TYPE =  'sr_site_release';
+
 	const TAXONOMY =  'sr_release_name';
-	const BELOW_SETTINGS = 80;
-	const CAPABILITIES_REQUIRED = 'update_core';
+
+	const _BELOW_SETTINGS = 80;
+
+	const _CAPABILITIES_REQUIRED = 'update_core';
 
 	static function on_load() {
 		require __DIR__ . '/includes/class-wpseo-integration.php';
@@ -83,7 +86,7 @@ STYLE;
 			'show_in_menu'        => true,
 			'show_in_admin_bar'   => false,
 			'publicly_queryable'  => false,
-			'menu_position'       => self::BELOW_SETTINGS,
+			'menu_position'       => self::_BELOW_SETTINGS,
 			'menu_icon'           => 'dashicons-images-alt',
 			'capabilities'       => self::_capabilities_required(),
 			'has_archive'         => true,
@@ -141,15 +144,15 @@ STYLE;
 	 */
 	private static function _capabilities_required() {
 		return array(
-			'edit_post'          => self::CAPABILITIES_REQUIRED,
-			'read_post'          => self::CAPABILITIES_REQUIRED,
-			'delete_post'        => self::CAPABILITIES_REQUIRED,
-			'edit_posts'         => self::CAPABILITIES_REQUIRED,
-			'edit_others_posts'  => self::CAPABILITIES_REQUIRED,
-			'publish_posts'      => self::CAPABILITIES_REQUIRED,
-			'read_private_posts' => self::CAPABILITIES_REQUIRED,
-			'create_posts'       => self::CAPABILITIES_REQUIRED,
-			'delete_posts'       => self::CAPABILITIES_REQUIRED,
+			'edit_post'          => self::_CAPABILITIES_REQUIRED,
+			'read_post'          => self::_CAPABILITIES_REQUIRED,
+			'delete_post'        => self::_CAPABILITIES_REQUIRED,
+			'edit_posts'         => self::_CAPABILITIES_REQUIRED,
+			'edit_others_posts'  => self::_CAPABILITIES_REQUIRED,
+			'publish_posts'      => self::_CAPABILITIES_REQUIRED,
+			'read_private_posts' => self::_CAPABILITIES_REQUIRED,
+			'create_posts'       => self::_CAPABILITIES_REQUIRED,
+			'delete_posts'       => self::_CAPABILITIES_REQUIRED,
 		);
 	}
 
