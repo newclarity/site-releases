@@ -3,7 +3,7 @@
 Plugin Name: Site Releases
 Plugin URI: https://github.com/newclarity/site-releases
 Description: Help agencies to track site releases
-Version: 0.1.2
+Version: 0.1.3
 Author: The NewClarity Team
 Author URI: http://newclarity.net
 Text Domain: site-releases
@@ -15,11 +15,11 @@ class Site_Releases {
 
 	const POST_TYPE =  'sr_site_release';
 
-	const TAXONOMY =  'sr_release_name';
+	const TAXONOMY =  'sr_site_release_name';
 
 	const _BELOW_SETTINGS = 80;
 
-	const _CAPABILITIES_REQUIRED = 'update_core';
+	const _CAPABILITIES_REQUIRED = 'manage_options';
 
 	static function on_load() {
 		require __DIR__ . '/includes/class-wpseo-integration.php';
@@ -158,7 +158,7 @@ STYLE;
 
 
 	static function _manage_release_names() {
-		$url = admin_url( 'edit-tags.php?taxonomy=sr_release_name&post_type=sr_release' );
+		$url = admin_url( 'edit-tags.php?taxonomy=' . self::TAXONOMY . '&post_type=' . self::POST_TYPE );
 		echo <<<STYLE
 <style type="text/css">
 #site-release-names-help {
