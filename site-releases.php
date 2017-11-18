@@ -22,10 +22,12 @@ class Site_Releases {
 	const _CAPABILITIES_REQUIRED = 'manage_options';
 
 	static function on_load() {
-		require __DIR__ . '/includes/class-wpseo-integration.php';
+
 		require __DIR__ . '/includes/class-empty-only-terms.php';
 
-		register_activation_hook( __FILE__, [ __CLASS__, 'activate' ] );
+		if ( defined( 'WPSEO_FILE' ) ) {
+			require __DIR__ . '/includes/class-disable-wpseo-for-site-releases.php';
+		}
 
 		self::_register_data();
 		add_action( 'edit_form_after_title', [ __CLASS__, '_edit_form_after_title' ] );
@@ -34,6 +36,11 @@ class Site_Releases {
 		 * Persist selected release name.
 		 */
 		add_action( 'wp_loaded', [ __CLASS__, '_wp_loaded' ] );
+
+		/**
+		 * Add an activation hook (though we may not need it...)
+		 */
+		register_activation_hook( __FILE__, [ __CLASS__, 'activate' ] );
 
 	}
 

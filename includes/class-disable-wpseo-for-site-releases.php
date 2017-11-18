@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Class _Site_Releases_WPSEO_Integration
+ * Class _Site_Releases_Disable_WPSEO
  */
-class _Site_Releases_WPSEO_Integration {
+class _Site_Releases_Disable_WPSEO {
 
 	static function on_load() {
 
@@ -61,7 +61,7 @@ class _Site_Releases_WPSEO_Integration {
 	static function _get_hook_instance_method_callable( $hook, $class_name, $method_name, $priority = 10 ) {
 		global $wp_filter;
 		do {
-			$callable = '__return_null';
+			$callable = null;
 			if ( ! isset( $wp_filter[ $hook ] ) ) {
 				break;
 			}
@@ -119,4 +119,4 @@ class _Site_Releases_WPSEO_Integration {
 	}
 
 }
-_Site_Releases_WPSEO_Integration::on_load();
+_Site_Releases_Disable_WPSEO::on_load();
