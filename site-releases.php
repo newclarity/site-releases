@@ -40,7 +40,17 @@ class Site_Releases {
 	 * @param WP_Post $post
 	 */
 	static function _edit_form_after_title( $post ) {
-		echo<<<STYLE
+		if ( $post->post_type === self::POST_TYPE ) {
+			self::edit_form( $post );
+		}
+	}
+
+	/**
+	 * @param WP_Post $post
+	 */
+	static function edit_form( $post ) {
+
+			echo<<<STYLE
 <style type="text/css">
 #edit-form-after-title {
 	margin: 1em;
