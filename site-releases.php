@@ -87,7 +87,7 @@ STYLE;
 	 * Register the Site Releases POST TYPE and Release Name TAXONOMY to WordPress.
 	 */
 	private static function _register_data() {
-		register_post_type( self::POST_TYPE, array(
+		$args = array(
 			'label'               => __( 'Site Releases', 'site-releases' ),
 			'public'              => true,
 			'exclude_from_search' => true,
@@ -130,9 +130,11 @@ STYLE;
 				'items_list_navigation' => __( 'Site Releases list navigation', 'site-releases' ),
 				'items_list'            => __( 'Site Releases list', 'site-releases' ),
 			),
-		));
+		);
+		$args = apply_filters( 'site_releases_post_type_args', $args, self::POST_TYPE );
+		register_post_type( self::POST_TYPE, $args );
 
-		register_taxonomy( self::TAXONOMY, self::POST_TYPE, array(
+		$args = array(
 			'label'              => __( 'Release Names', 'site-releases' ),
 			'public'             => true,
 			'publicly_queryable' => false,
@@ -145,7 +147,9 @@ STYLE;
 			'meta_box_cb'        => [ __CLASS__, '_manage_release_names' ],
 			'rest_base'          => 'site-release-names',
 			'capabilities'       => self::_capabilities_required(),
-		));
+		);
+		$args = apply_filters( 'site_releases_taxonomy_args', $args, self::TAXONOMY, self::POST_TYPE );
+		register_taxonomy( self::TAXONOMY, self::POST_TYPE, $args );
 
 	}
 
