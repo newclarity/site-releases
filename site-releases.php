@@ -3,7 +3,7 @@
 Plugin Name: Site Releases
 Plugin URI: https://github.com/newclarity/site-releases
 Description: Help agencies to track site releases
-Version: 0.1.4
+Version: 0.1.5
 Author: The NewClarity Team
 Author URI: http://newclarity.net
 Text Domain: site-releases
@@ -118,7 +118,7 @@ STYLE;
 			'publicly_queryable'  => false,
 			'menu_position'       => self::_BELOW_SETTINGS,
 			'menu_icon'           => 'dashicons-images-alt',
-			'capabilities'       => self::_capabilities_required(),
+			'capabilities'        => self::_capabilities_required( 'post' ),
 			'has_archive'         => true,
 			'delete_with_user'    => false,
 			'show_in_rest'        => true,
@@ -166,7 +166,7 @@ STYLE;
 			'show_in_rest'       => true,
 			'meta_box_cb'        => [ __CLASS__, '_manage_release_names' ],
 			'rest_base'          => 'site-release-names',
-			'capabilities'       => self::_capabilities_required(),
+			'capabilities'       => self::_capabilities_required( 'term' ),
 		);
 		$args = apply_filters( 'site_releases_taxonomy_args', $args, self::TAXONOMY, self::POST_TYPE );
 		register_taxonomy( self::TAXONOMY, self::POST_TYPE, $args );
@@ -176,20 +176,29 @@ STYLE;
 	/**
 	 * Register the Site Releases POST TYPE and Release Name TAXONOMY to WordPress.
 	 */
-	private static function _capabilities_required() {
-		return array(
-			'edit_post'          => self::_CAPABILITIES_REQUIRED,
-			'read_post'          => self::_CAPABILITIES_REQUIRED,
-			'delete_post'        => self::_CAPABILITIES_REQUIRED,
-			'edit_posts'         => self::_CAPABILITIES_REQUIRED,
-			'edit_others_posts'  => self::_CAPABILITIES_REQUIRED,
-			'publish_posts'      => self::_CAPABILITIES_REQUIRED,
-			'read_private_posts' => self::_CAPABILITIES_REQUIRED,
-			'create_posts'       => self::_CAPABILITIES_REQUIRED,
-			'delete_posts'       => self::_CAPABILITIES_REQUIRED,
+	private static function _capabilities_required( $type ) {
+		$capabilities = array(
+			"edit_{$type}"    => self::_CAPABILITIES_REQUIRED,
+			"edit_{$type}s"   => self::_CAPABILITIES_REQUIRED,
+			"delete_{$type}"  => self::_CAPABILITIES_REQUIRED,
+			"delete_{$type}s" => self::_CAPABILITIES_REQUIRED,
 		);
+		switch ( $type ) {
+			case 'term':
+				$capabilities[ 'assign_term' ]  = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'assign_terms' ] = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'manage_terms' ] = self::_CAPABILITIES_REQUIRED;
+				break;
+			case 'post':
+				$capabilities[ 'read_post' ]          = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'publish_posts' ]      = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'create_posts' ]       = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'edit_others_posts' ]  = self::_CAPABILITIES_REQUIRED;
+				$capabilities[ 'read_private_posts' ] = self::_CAPABILITIES_REQUIRED;
+				break;
+		}
+		return $capabilities;
 	}
-
 
 	static function _manage_release_names() {
 		$url = admin_url( 'edit-tags.php?taxonomy=' . self::TAXONOMY . '&post_type=' . self::POST_TYPE );
