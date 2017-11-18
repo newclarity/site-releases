@@ -30,10 +30,30 @@ class Site_Releases {
 		self::_register_data();
 		add_action( 'edit_form_after_title', [ __CLASS__, '_edit_form_after_title' ] );
 
+		/**
+		 * Persist selected release name.
+		 */
+		add_action( 'wp_loaded', [ __CLASS__, '_wp_loaded' ] );
+
 	}
 
 	static function activate() {
 
+	}
+
+	/**
+	 * Move $_POST[release_name_id] into $_POST[tax_input] so WordPress core will save it.
+	 */
+	static function _wp_loaded() {
+		do {
+			if ( ! isset( $_POST[ 'release_name_id' ] ) ) {
+				break;
+			}
+			if ( '-1' === $_POST[ 'release_name_id' ] ) {
+				$_POST[ 'release_name_id' ] = 0;
+			}
+			$_POST[ 'tax_input' ][ self::TAXONOMY ][ 0 ] = "{$_POST[ 'release_name_id' ]}";
+		} while ( false );
 	}
 
 	/**
