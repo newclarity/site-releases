@@ -12,7 +12,28 @@ class _Site_Releases_Empty_Only_Terms {
 		add_filter( 'pre_get_terms', [ __CLASS__, '_pre_get_terms' ] );
 		add_filter( 'get_terms_defaults', [ __CLASS__, '_get_terms_defaults' ], 10, 2 );
 		add_filter( 'get_terms', [ __CLASS__, '_get_terms' ], 10, 4 );
+		add_filter( 'get_terms_args', [ __CLASS__, '_get_terms_args_999' ], 999, 2 );
 
+	}
+
+	/**
+	 * Ensures $args[ 'hide_empty' ] is false if $args[ 'empty_only' ] is true
+	 *
+	 * @param array $args       An array of get_terms() arguments.
+	 * @param array $taxonomies An array of taxonomies.
+	 * @return array
+	 */
+	static function _get_terms_args_999( $args, $taxonomies ) {
+		do {
+			if ( empty( $args[ 'empty_only' ] ) ) {
+				break;
+			}
+			if ( ! in_array( Site_Releases::TAXONOMY, $taxonomies ) ) {
+				break;
+			}
+			$args[ 'hide_empty' ] = false;
+		} while ( false );
+		return $args;
 	}
 
 	/**
