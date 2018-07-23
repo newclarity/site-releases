@@ -26,6 +26,7 @@ class _Site_Releases_Disable_WPSEO {
 	 */
 	static function _add_meta_boxes_11() {
 		remove_meta_box( 'wpseo_meta', Site_Releases::POST_TYPE, 'normal' );
+		remove_meta_box( 'yoast_internal_linking', Site_Releases::POST_TYPE, 'side' );
 	}
 
 	/**
