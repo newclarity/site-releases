@@ -703,28 +703,12 @@ STYLE;
 	 *
 	 */
 	static function _manage_sr_site_release_posts_columns( $columns ){
-
-//		unset( $columns['comments'] );
-//		unset( $columns['tags'] );
-//		/*
-//		 * This column is added by NPR plugin. We will add this link to row actions instead.
-//		 */
-//		unset( $columns['update_story'] );
-//
-//		$cb = $columns['cb'];
-//		unset( $columns['cb'] );
-//
-//		$columns = array(
-//			           'cb'           => $cb,
-//			           'story_source' => _x( '', 'story_source', 'wabe' ),
-//		           ) + $columns;
-
-		$columns['version'] = __('Release No.', 'site-releases');
+		$columns['version'] = __('Release Name', 'site-releases');
 		return $columns;
 	}
 
 	/**
-	 * Render a column with the icons depicting the source (NPR vs WABE) and a warning icon when the target page does not exist.
+	 * Render a column with a  name of the release.
 	 *
 	 * @param string $column
 	 * @param int $post_id
@@ -740,10 +724,6 @@ STYLE;
 			if( $term = self::get_release_term( $post_id )){
 				esc_html_e( $term->name );
 			}
-
-//			$story = new WABE_Story( $post_id );
-//
-//			$story->the_target_story_status_html();
 
 		} while ( false );
 
