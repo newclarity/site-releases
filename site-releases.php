@@ -24,13 +24,18 @@ class Site_Releases {
 
 	static function on_load() {
 
-		//require __DIR__ . '/includes/class-empty-only-terms.php';
-
 		if ( defined( 'WPSEO_FILE' ) ) {
+			/**
+			 * disable WPSEO metaboxes on post edit screen
+			 */
 			require __DIR__ . '/includes/class-disable-wpseo-for-site-releases.php';
 		}
 
-		self::_register_data();
+		self::_register_post_type();
+
+		/**
+		 * add controls to show previous revision number and to pick a new revision number
+		 */
 		add_action( 'edit_form_after_title', [ __CLASS__, '_edit_form_after_title' ] );
 
 		/**
@@ -39,16 +44,56 @@ class Site_Releases {
 		register_activation_hook( __FILE__, [ __CLASS__, 'activate' ] );
 
 		/**
-		 *
+		 * modify Admin list to show excerpt
 		 */
+		add_action( 'admin_print_styles-edit.php', [ __CLASS__, '_admin_print_styles' ]);
 		add_filter( 'manage_sr_site_release_posts_columns', [ __CLASS__, '_manage_sr_site_release_posts_columns' ] );
+		add_filter( 'manage_sr_site_release_posts_custom_column', [ __CLASS__, '_manage_sr_site_release_posts_custom_column' ], 10, 2 );
+		add_filter( 'manage_edit-sr_site_release_columns' , [ __CLASS__, '_manage_edit_sr_site_release_columns' ] );
 
-		add_filter('manage_sr_site_release_posts_custom_column', [ __CLASS__, '_manage_sr_site_release_posts_custom_column' ], 10, 2 );
+		/**
+		 * enqueue jQuery UI spinner when adding a new revision
+		 */
+		add_action( 'admin_enqueue_scripts', [ __CLASS__, '_admin_enqueue_scripts' ]);
 
-		add_action('admin_enqueue_scripts', [ __CLASS__, '_admin_enqueue_scripts' ]);
+		/**
+		 * shortcodes
+		 */
+		add_shortcode( 'site-release-number',  [ __CLASS__, '_site_release_number' ]);
+		add_shortcode( 'site-release-date',    [ __CLASS__, '_site_release_date' ]);
+		add_shortcode( 'site-release-details', [ __CLASS__, '_site_release_details' ]);
+
+		/**
+		 * Dashboard widgets
+		 */
+		add_action( 'wp_dashboard_setup', [ __CLASS__, '_wp_dashboard_setup' ] );
 	}
 
 	static function activate() {
+
+	}
+
+	/**
+	 * Sprinkle some some CSS to customize the width of certain columns in the Admin list of Site Releases
+	 */
+	static function _admin_print_styles(){
+
+		if( ( $screen = get_current_screen()) && self::POST_TYPE == $screen->post_type ){
+			echo <<<STYLE
+<style type="text/css">
+	.fixed .column-date {
+	 	width: 8em !important;
+	}
+	.fixed .column-title {
+	 	width: 12em !important;
+	}
+	#wpseo-filter, #wpseo-readability-filter{
+		display: none;
+	}
+</style>
+STYLE;
+
+		}
 
 	}
 
@@ -70,9 +115,9 @@ class Site_Releases {
 	}
 
 	/**
-	 * Register the Site Releases POST TYPE and Release Name TAXONOMY to WordPress.
+	 * Register the Site Releases POST TYPE to WordPress.
 	 */
-	private static function _register_data() {
+	private static function _register_post_type() {
 		$args = array(
 			'label'               => __( 'Site Releases', 'site-releases' ),
 			'public'              => true,
@@ -167,8 +212,6 @@ class Site_Releases {
 	 */
 	static function edit_form( $post ) {
 
-		$decimals = self::VERSION_DECIMALS;
-
 		echo <<<STYLE
 <style type="text/css">
 #titlediv{
@@ -249,7 +292,6 @@ jQuery(document).ready(function($){
 </script>
 STYLE;
 
-
 		$is_new = ( 'auto-draft' == $post->post_status );
 
 		$release = self::get_latest_release();
@@ -258,15 +300,15 @@ STYLE;
 
 		if ( !$is_new ) {
 
-			echo sprintf( 'Release %s', number_format( $release['number'], 1 ));
+			printf( 'Release %s', number_format( $release[ 'number' ], self::VERSION_DECIMALS ) );
 
-			if( $release[ 'post_id' ] == $post->ID || isset( $release[ 'post_id' ] ) && $release[ 'post_id' ] == $post->ID ) {
-				echo '<br><small>'.__( 'This release is currently the latest.', 'site-releases' ).'</small>';
+			if ( $release[ 'post_id' ] == $post->ID || isset( $release[ 'post_id' ] ) && $release[ 'post_id' ] == $post->ID ) {
+				echo '<br><small>' . __( 'This release is currently the latest.', 'site-releases' ) . '</small>';
 			}
 
 		} else {
 
-			$current_number = number_format( $release['number'], 1 );
+			$current_number = number_format( $release['number'], self::VERSION_DECIMALS );
 			_e( 'Previous release: ', 'site-releases' );
 			echo "<span class='release_number previous'>{$current_number}</span>";
 			echo '&nbsp;<a title="'.__('Edit previous release', 'site-releases').'" id="prev_rel_link" href="'.get_edit_post_link( $release['post_id'] ) .'"><span class="dashicons dashicons-external"></span></a>';
@@ -274,11 +316,11 @@ STYLE;
 			$next_number = self::get_next_release_number( $release );
 			$step = self::VERSION_STEP;
 			$max  = ceil( $next_number + $step );
-			$formatted = number_format( $next_number, 1 );
+			$formatted = number_format( $next_number, self::VERSION_DECIMALS );
 
 			echo '<div class="release_section">';
-				echo '<div class="release_title">' . __( 'This release:', 'site-releases' ) . '</div>';
-				echo "<input data-step='{$step}' data-min='{$formatted}' data-max='{$max}' class='release_number jq-spinner' value='{$formatted}' name='post_title'/>";
+			echo '<div class="release_title">' . __( 'This release:', 'site-releases' ) . '</div>';
+			echo "<input data-step='{$step}' data-min='{$formatted}' data-max='{$max}' class='release_number jq-spinner' value='{$formatted}' name='post_title'/>";
 			echo '</div>';
 		}
 
@@ -328,6 +370,7 @@ STYLE;
 			'posts_per_page' => 1,
 			'post_status'    => 'publish'
 		);
+
 		$releases = get_posts( $query );
 
 		do {
@@ -339,16 +382,22 @@ STYLE;
 			$post = reset( $releases );
 
 			$release = [
-				'post_id'     => $post->ID,
-				'post'        => $post,
-				'number'      => round( $post->post_title, 1 ),
-				'description' => $post->post_content,
-				'datetime'    => $post->post_date_gmt
+				'post_id'  => $post->ID,
+				'post'     => $post,
+				'number'   => is_numeric( $post->post_title ) ? round( $post->post_title, self::VERSION_DECIMALS ): 0,
+				'details'  => $post->post_content,
+				'datetime' => $post->post_date_gmt
 			];
 
 		} while( false );
 
-		return $release;
+		return $release ? $release : array(
+			'post_id'  => 0,
+			'post'     => null,
+			'number'   => 0,
+			'details'  => '',
+			'datetime' => date('Y-m-d H:i:s')
+		);
 	}
 
 	/**
@@ -364,7 +413,7 @@ STYLE;
 	 * @return float
 	 */
 	static function get_next_release_number( $release ){
-		return apply_filters('sr_get_next_release_number', $release['number'] + self::VERSION_STEP, self::VERSION_DECIMALS, $release );
+		return apply_filters('site_releases_get_next_release_number', $release['number'] + self::VERSION_STEP, $release );
 	}
 
 	/**
@@ -375,7 +424,30 @@ STYLE;
 	 *
 	 */
 	static function _manage_sr_site_release_posts_columns( $columns ){
-		$columns['changes'] = __('Changes', 'site-releases');
+
+		unset( $columns['title'] );
+		$columns['title']   = __('Release', 'site-releases');
+		$columns['details'] = __('Details', 'site-releases');
+		return $columns;
+	}
+
+	/**
+	 * Remove WPSEO columns
+	 *
+	 * @param $columns
+	 *
+	 * @return mixed
+	 */
+	static function _manage_edit_sr_site_release_columns( $columns ) {
+
+		unset($columns['wpseo-links']);
+		unset($columns['wpseo-score']);
+		unset($columns['wpseo-score-readability']);
+		unset($columns['wpseo-title']);
+		unset($columns['wpseo-metadesc']);
+		unset($columns['wpseo-focuskw']);
+		unset($columns['wpseo-linked']);
+
 		return $columns;
 	}
 
@@ -389,14 +461,84 @@ STYLE;
 
 		do {
 
-			if ( 'changes' !== $column ) {
+			if ( 'details' !== $column ) {
 				break;
 			}
 
-			echo apply_filters( 'the_excerpt', get_the_excerpt( $post_id ));
+			echo apply_filters( 'the_content', get_the_content( $post_id ));
 
 		} while ( false );
 
+	}
+
+	/**
+	 * @param $atts
+	 */
+	static function _site_release_number( $atts ){
+
+		if( $release = self::get_latest_release() ) {
+			echo '<span class="site-release-number">' . esc_attr( $release[ 'number' ] ) . '</span>';
+		}
+
+	}
+
+	/**
+	 * @param $atts
+	 */
+	static function _site_release_date( $atts ){
+
+		if( $release = self::get_latest_release() ) {
+			$format = get_option('date_format');
+			echo '<span class="release-date">' . date( $format, strtotime( $release[ 'datetime' ] )) .'</span>';
+		}
+
+	}
+
+	/**
+	 * @param $atts
+	 */
+	static function _site_release_details( $atts ){
+
+		if( $release = self::get_latest_release() ) {
+			echo '<div class="site-release-details">';
+			echo wp_kses_post( $release[ 'details' ] );
+			echo '</div>';
+		}
+
+	}
+
+	/**
+	 *
+	 */
+	static function _wp_dashboard_setup(){
+
+		wp_add_dashboard_widget(
+			'site_release_widget',           // Widget slug.
+			'Site Release',                  // Title.
+			[ __CLASS__, '_dashboard_widget' ] // Display function.
+		);
+	}
+
+	/**
+	 *
+	 */
+	static function _dashboard_widget(){
+
+		$release = self::get_latest_release();
+
+		echo '<h2>';
+		printf( __('Release %s', 'site-releases'), number_format( $release['number'], self::VERSION_DECIMALS ));
+		echo '</h2>';
+
+		echo '<h3>';
+		$format = get_option('date_format');
+		printf( __('Published %s', 'site-releases'), date( $format, strtotime( $release['datetime'] )));
+		echo '</h3>';
+
+		if( $details = wp_kses_post( $release['details'] )){
+			echo '<hr>';
+			echo $details;
+		}
 	}
 
 }
