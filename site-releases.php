@@ -3,7 +3,7 @@
 Plugin Name: Site Releases
 Plugin URI: https://github.com/newclarity/site-releases
 Description: Help agencies to track site releases
-Version: 0.1.6
+Version: 0.2.0
 Author: The NewClarity Team
 Author URI: http://newclarity.net
 Text Domain: site-releases
@@ -15,15 +15,16 @@ class Site_Releases {
 
 	const POST_TYPE =  'sr_site_release';
 
-	const TAXONOMY =  'sr_site_release_name';
-
 	const _BELOW_SETTINGS = 80;
+
+	const VERSION_STEP     = 0.1;
+	const VERSION_DECIMALS = 1;
 
 	const _CAPABILITIES_REQUIRED = 'manage_options';
 
 	static function on_load() {
 
-		require __DIR__ . '/includes/class-empty-only-terms.php';
+		//require __DIR__ . '/includes/class-empty-only-terms.php';
 
 		if ( defined( 'WPSEO_FILE' ) ) {
 			require __DIR__ . '/includes/class-disable-wpseo-for-site-releases.php';
@@ -33,81 +34,39 @@ class Site_Releases {
 		add_action( 'edit_form_after_title', [ __CLASS__, '_edit_form_after_title' ] );
 
 		/**
-		 * Persist selected release name.
-		 */
-		add_action( 'wp_loaded', [ __CLASS__, '_wp_loaded' ] );
-
-		/**
 		 * Add an activation hook (though we may not need it...)
 		 */
 		register_activation_hook( __FILE__, [ __CLASS__, 'activate' ] );
 
+		/**
+		 *
+		 */
+		add_filter( 'manage_sr_site_release_posts_columns', [ __CLASS__, '_manage_sr_site_release_posts_columns' ] );
+
+		add_filter('manage_sr_site_release_posts_custom_column', [ __CLASS__, '_manage_sr_site_release_posts_custom_column' ], 10, 2 );
+
+		add_action('admin_enqueue_scripts', [ __CLASS__, '_admin_enqueue_scripts' ]);
 	}
 
 	static function activate() {
 
 	}
 
-	/**
-	 * Move $_POST[release_name_id] into $_POST[tax_input] so WordPress core will save it.
-	 */
-	static function _wp_loaded() {
-		do {
-			if ( ! isset( $_POST[ 'release_name_id' ] ) ) {
-				break;
-			}
-			if ( '-1' === $_POST[ 'release_name_id' ] ) {
-				$_POST[ 'release_name_id' ] = 0;
-			}
-			$_POST[ 'tax_input' ][ self::TAXONOMY ][ 0 ] = "{$_POST[ 'release_name_id' ]}";
-		} while ( false );
-	}
+	static function _admin_enqueue_scripts( $hook ){
+		$screen = get_current_screen();
+		if( 'add' == $screen->action && self::POST_TYPE == $screen->post_type ){
+			wp_enqueue_script( [ 'jquery', 'jquery-ui-spinner' ] );
 
-	/**
-	 * @param WP_Post $post
-	 */
-	static function _edit_form_after_title( $post ) {
-		if ( $post->post_type === self::POST_TYPE ) {
-			self::edit_form( $post );
+			$wp_scripts = wp_scripts();
+			wp_enqueue_style(
+				'jquery-ui-theme-smoothness',
+				sprintf(
+					'//ajax.googleapis.com/ajax/libs/jqueryui/%s/themes/smoothness/jquery-ui.css', // working for https as well now
+					$wp_scripts->registered['jquery-ui-core']->ver
+				)
+			);
 		}
-	}
 
-	/**
-	 * @param WP_Post $post
-	 */
-	static function edit_form( $post ) {
-
-			echo<<<STYLE
-<style type="text/css">
-#edit-form-after-title {
-	margin: 1em;
-	font-size:1.5em;
-}
-#edit-form-after-title select {
-	font-size:1em;
-}
-</style>
-STYLE;
-		echo '<div id="edit-form-after-title">';
-		_e( 'Release Name', 'site-releases' );
-		echo ': ';
-		$terms = wp_get_object_terms( $post->ID, self::TAXONOMY );
-		$term_id = isset( $terms[ 0 ]->term_id )
-			? $terms[ 0 ]->term_id
-			: null;
-
-		wp_dropdown_categories( array(
-			'empty_only'       => true,
-			'hierarchical'     => true,
-			'taxonomy'         => self::TAXONOMY,
-			'show_option_none' => __( 'Select a Name', 'site-releases' ),
-			'include_selected' => true,
-			'selected'         => $term_id,
-			'name'             => 'release_name_id',
-			'orderby'          => 'name',
-
-		));
-		echo '</div>';
 	}
 
 	/**
@@ -133,7 +92,7 @@ STYLE;
 			'show_in_quick_edit'  => false,
 			'show_tagcloud'       => false,
 			'show_admin_column'   => true,
-			'taxonomies'          => [ Site_Releases::TAXONOMY ],
+			'taxonomies'          => [ ],
 			'rewrite'             => array(
 				'slug'       => 'site-releases',
 				'with_front' => false,
@@ -161,27 +120,14 @@ STYLE;
 		$args = apply_filters( 'site_releases_post_type_args', $args, self::POST_TYPE );
 		register_post_type( self::POST_TYPE, $args );
 
-		$args = array(
-			'label'              => __( 'Release Names', 'site-releases' ),
-			'public'             => true,
-			'publicly_queryable' => false,
-			'show_ui'            => true,
-			'show_in_menu'       => true,
-			'rewrite'            => false,
-			'hierarchical'       => true,
-			'show_in_nav_menus'  => false,
-			'show_in_rest'       => true,
-			'meta_box_cb'        => [ __CLASS__, '_manage_release_names' ],
-			'rest_base'          => 'site-release-names',
-			'capabilities'       => self::_capabilities_required( 'term' ),
-		);
-		$args = apply_filters( 'site_releases_taxonomy_args', $args, self::TAXONOMY, self::POST_TYPE );
-		register_taxonomy( self::TAXONOMY, self::POST_TYPE, $args );
-
 	}
 
 	/**
 	 * Register the Site Releases POST TYPE and Release Name TAXONOMY to WordPress.
+	 *
+	 * @param string $type
+	 *
+	 * @return array
 	 */
 	private static function _capabilities_required( $type ) {
 		$capabilities = array(
@@ -207,20 +153,250 @@ STYLE;
 		return $capabilities;
 	}
 
-	static function _manage_release_names() {
-		$url = admin_url( 'edit-tags.php?taxonomy=' . self::TAXONOMY . '&post_type=' . self::POST_TYPE );
+	/**
+	 * @param WP_Post $post
+	 */
+	static function _edit_form_after_title( $post ) {
+		if ( $post->post_type === self::POST_TYPE ) {
+			self::edit_form( $post );
+		}
+	}
+
+	/**
+	 * @param WP_Post $post
+	 */
+	static function edit_form( $post ) {
+
+		$decimals = self::VERSION_DECIMALS;
+
 		echo <<<STYLE
 <style type="text/css">
-#site-release-names-help {
-	margin: 1em;
+#titlediv{
+	display: none;
+}
+#edit-form-after-title {
+	margin: 1em 1em 0.25em 0.5em;
+	font-size: 1.5em;
+	line-height: 1.5;
+}
+#edit-form-after-title select {
+	font-size:1em;
+}
+.release_number {
+    display: inline-block;
+    width: 2.5em;
+    min-width: auto;
+
+	font-weight: bold;
+  
+    background-color: transparent;
+    border: none;
+
+	quotes: "“" "”" "‘" "’";
+    margin-left: 5px;
+    
+    outline: none;
+    font-size: 18px;
+}
+
+.ui-widget .release_number {
+	outline: none;
+    font-size: 18px;    
+    margin-top: 0;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;    
+}
+
+.release_number.previous {
+	margin-left: .3em;
+    min-width: 0;
+    width: auto;	
+}
+
+#prev_rel_link,
+.edit_release {
+	text-decoration: none;
+}
+
+.release_section {
+	margin-top: 1em;
+}
+.release_section .ui-widget-content{
+	background: #fafafa;
+}
+
+.release_section .ui-spinner{
+	margin-left: 5px;
+}
+
+.release_title {
+	display: inline-block;
+	margin-right: 10px;	
 }
 </style>
+<script> 
+jQuery(document).ready(function($){
+  var ctrl = $( '.jq-spinner' );
+  ctrl.spinner({ step: ctrl.data('step'), numberFormat: 'n', min: ctrl.data('min'), max: ctrl.data('max'),  stop: function (event, ui) {
+    if ($(this).val().indexOf(".") < 0) {
+        $(this).val($(this).val() + '.0');
+    }
+  }, create: function(event, ui){
+	if ($(this).val().indexOf(".") < 0) {
+        $(this).val($(this).val() + '.0');
+    }      
+  }});
+});
+</script>
 STYLE;
-		echo '<div id="site-release-names-help">';
-		$message = __( 'Click %shere%s to add Release Names.', 'site-releases' );
-		echo '<p>' . sprintf( $message, '<a target="_blank" href="' .$url . '">', '</a>' ) . '</p>';
-		echo '<p>' . __( 'You will need to reload this page after adding in order for them to appear in the dropdown to the left.' ) . '</p>';
+
+
+		$is_new = ( 'auto-draft' == $post->post_status );
+
+		$release = self::get_latest_release();
+
+		echo '<div id="edit-form-after-title">';
+
+		if ( !$is_new ) {
+
+			echo sprintf( 'Release %s', number_format( $release['number'], 1 ));
+
+			if( $release[ 'post_id' ] == $post->ID || isset( $release[ 'post_id' ] ) && $release[ 'post_id' ] == $post->ID ) {
+				echo '<br><small>'.__( 'This release is currently the latest.', 'site-releases' ).'</small>';
+			}
+
+		} else {
+
+			$current_number = number_format( $release['number'], 1 );
+			_e( 'Previous release: ', 'site-releases' );
+			echo "<span class='release_number previous'>{$current_number}</span>";
+			echo '&nbsp;<a title="'.__('Edit previous release', 'site-releases').'" id="prev_rel_link" href="'.get_edit_post_link( $release['post_id'] ) .'"><span class="dashicons dashicons-external"></span></a>';
+
+			$next_number = self::get_next_release_number( $release );
+			$step = self::VERSION_STEP;
+			$max  = ceil( $next_number + $step );
+			$formatted = number_format( $next_number, 1 );
+
+			echo '<div class="release_section">';
+				echo '<div class="release_title">' . __( 'This release:', 'site-releases' ) . '</div>';
+				echo "<input data-step='{$step}' data-min='{$formatted}' data-max='{$max}' class='release_number jq-spinner' value='{$formatted}' name='post_title'/>";
+			echo '</div>';
+		}
 
 		echo '</div>';
 	}
+
+	/**
+	 * @param string $param
+	 * @param mixed  $value
+	 */
+	static function get_site_release_by( $param, $value ){
+
+		$post = null;
+
+		do {
+
+			switch ( $param ){
+				case 'number':
+					if ( ! is_numeric( $value ) ) {
+						break;
+					}
+
+					$posts = get_page_by_title( round( $value, 1 ), OBJECT, self::POST_TYPE );
+					break;
+			}
+
+			if ( ! empty( $posts ) ) {
+				$post = reset( $posts );
+			}
+
+		} while ( false );
+
+		return $post;
+	}
+
+	/**
+	 * @return array|null
+	 */
+	static function get_latest_release(){
+
+		$release  = null;
+
+		$query = array(
+			'post_type'      => self::POST_TYPE,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+			'posts_per_page' => 1,
+			'post_status'    => 'publish'
+		);
+		$releases = get_posts( $query );
+
+		do {
+
+			if( empty( $releases )){
+				break;
+			}
+
+			$post = reset( $releases );
+
+			$release = [
+				'post_id'     => $post->ID,
+				'post'        => $post,
+				'number'      => round( $post->post_title, 1 ),
+				'description' => $post->post_content,
+				'datetime'    => $post->post_date_gmt
+			];
+
+		} while( false );
+
+		return $release;
+	}
+
+	/**
+	 * Each site release should be given a 2-part dotted version number in the title field of this edit form using the pattern X.Y where:
+	 *
+	 * <ul>
+	 * <li>Y (minor number) should increment by 1 for every release</li>
+	 * <li>X (major number) should increment by 1 when Y equals 9 (in which case X should change and Y should revert to 0).</li>
+	 * </ul>
+	 *
+	 * @param array $release contains details about the latest releases @see self::get_latest_release()
+	 *
+	 * @return float
+	 */
+	static function get_next_release_number( $release ){
+		return apply_filters('sr_get_next_release_number', $release['number'] + self::VERSION_STEP, self::VERSION_DECIMALS, $release );
+	}
+
+	/**
+	 * Change the columns displayed on admin list
+	 *
+	 * @param string[] $columns
+	 * @return string[]
+	 *
+	 */
+	static function _manage_sr_site_release_posts_columns( $columns ){
+		$columns['changes'] = __('Changes', 'site-releases');
+		return $columns;
+	}
+
+	/**
+	 * Render a column with a  name of the release.
+	 *
+	 * @param string $column
+	 * @param int $post_id
+	 */
+	static function _manage_sr_site_release_posts_custom_column( $column, $post_id ) {
+
+		do {
+
+			if ( 'changes' !== $column ) {
+				break;
+			}
+
+			echo apply_filters( 'the_excerpt', get_the_excerpt( $post_id ));
+
+		} while ( false );
+
+	}
+
 }

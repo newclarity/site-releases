@@ -9,7 +9,6 @@ class _Site_Releases_Disable_WPSEO {
 
 		add_filter( 'add_meta_boxes', [ __CLASS__, '_add_meta_boxes_11' ], 11, 2 );
 		add_filter( 'option_wpseo_titles', [ __CLASS__, '_option_wpseo_titles' ] );
-		add_filter( 'admin_init', [ __CLASS__, '_admin_init_11' ], 11 );
 
 	}
 
@@ -26,33 +25,7 @@ class _Site_Releases_Disable_WPSEO {
 	 */
 	static function _add_meta_boxes_11() {
 		remove_meta_box( 'wpseo_meta', Site_Releases::POST_TYPE, 'normal' );
-	}
-
-	/**
-	 * Disable Yoast SEO stuff in term edit page for Release Names
-	 */
-	static function _admin_init_11() {
-		global $taxnow, $pagenow;
-		do {
-			if ( ! isset( $taxnow ) ) {
-				break;
-			}
-			if ( ! isset( $pagenow ) ) {
-				break;
-			}
-			if ( Site_Releases::TAXONOMY !== $taxnow ) {
-				break;
-			}
-			if ( 'term.php' !== $pagenow ) {
-				break;
-			}
-			$hook = "{$taxnow}_edit_form";
-			$callable =  self::_get_hook_instance_method_callable( $hook, 'WPSEO_Taxonomy', 'term_metabox', 90 );
-			if ( is_null( $callable ) ) {
-				break;
-			}
-			remove_action( $hook, $callable, 90 );
-		} while ( false );
+		remove_meta_box( 'yoast_internal_linking', Site_Releases::POST_TYPE, 'side' );
 	}
 
 	/**
