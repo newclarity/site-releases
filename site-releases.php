@@ -3,7 +3,7 @@
 Plugin Name: Site Releases
 Plugin URI: https://github.com/newclarity/site-releases
 Description: Help agencies to track site releases
-Version: 0.2.0
+Version: 0.1.8
 Author: The NewClarity Team
 Author URI: http://newclarity.net
 Text Domain: site-releases
